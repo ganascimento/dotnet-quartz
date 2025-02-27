@@ -7,7 +7,23 @@ services:
       dockerfile: Dockerfile
     container_name: quartz_app
     ports:
-      - "5000:80"
+      - 5000:80
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://aspiredashboard:18889
+    depends_on:
+      - aspiredashboard
+    networks:
+      - app_network
+
+  aspiredashboard:
+    image: mcr.microsoft.com/dotnet/nightly/aspire-dashboard:8.0
+    container_name: quatz_dashboard
+    environment:
+      - DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS=true
+    ports:
+      - 18888:18888
+      - 4317:18889
+      - 18889:18889
     networks:
       - app_network
 

@@ -8,6 +8,10 @@ This project was developed to test the Quartz lib, used to schedule jobs
 
 - Dotnet 7
 - Quartz
+- OpenTelemetry
+- Aspire
+- InMemory DB
+- EF Core
 
 ## What is Quartz?
 
@@ -109,6 +113,64 @@ private async Task ScheludeCreateEmailTokenValidationJob(UserEntity user)
 
 Cool, now your job will be done in 5 seconds, once.
 
+## Telemetry
+
+To add telemetry packages with this specific version, other version errors may occur:
+
+```c#
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.8.1" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.8.1" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.8.1" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" Version="1.0.0-beta.11" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.8.1" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Quartz" Version="1.0.0-beta.1" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.8.1" />
+```
+
+Configure in `Program.cs`:
+
+```c#
+var openTelemetryUri = new Uri(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"] ?? throw new InvalidDataException("Not found!"));
+
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(resource => resource.AddService("QuartzApp"))
+    .WithMetrics(metrics =>
+    {
+        metrics
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddRuntimeInstrumentation();
+
+        metrics.AddOtlpExporter(opt => opt.Endpoint = openTelemetryUri);
+    })
+    .WithTracing(tracing =>
+    {
+        tracing
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddEntityFrameworkCoreInstrumentation()
+            .AddQuartzInstrumentation();
+
+        tracing.AddOtlpExporter(opt => opt.Endpoint = openTelemetryUri);
+    });
+
+builder.Logging.AddOpenTelemetry(log =>
+{
+    log.IncludeScopes = true;
+    log.IncludeFormattedMessage = true;
+    log.AddOtlpExporter(opt => opt.Endpoint = openTelemetryUri);
+});
+```
+
+Add config to `appsettings.json`:
+
+```json
+{
+  ...
+  "OTEL_EXPORTER_OTLP_ENDPOINT": "http://localhost:4317" <--
+}
+```
+
 ## Test
 
 To run this project you need docker installed on your machine, see the docker documentation [here](https://www.docker.com/).
@@ -118,14 +180,16 @@ Having all the resources installed, run the command in a terminal from the root 
 In terminal show this:
 
 ```console
-[+] Running 2/2
- ✔ Network dotnet-quartz_app_network  Created                                              0.8s
- ✔ Container quartz_app               Started                                              1.4s
+[+] Running 3/3
+ ✔ Network dotnet-quartz_default  Created                                  0.9s
+ ✔ Container quartz_app           Started                                  1.6s
+ ✔ Container quartz_dashboard     Started                                  2.3s
 ```
 
 After this, access the link below:
 
 - Swagger project [click here](http://localhost:5000/swagger)
+- Aspire Dashboard [click here](http://localhost:18888)
 
 ### Stop Application
 
