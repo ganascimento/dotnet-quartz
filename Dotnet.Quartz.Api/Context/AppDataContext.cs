@@ -5,7 +5,7 @@ namespace Dotnet.Quartz.Api.Context;
 
 public class AppDataContext : DbContext
 {
-    public required DbSet<UserEntity> User { get; set; }
+    public DbSet<UserEntity>? User { get; set; }
 
     public AppDataContext(DbContextOptions<AppDataContext> options) : base(options)
     { }

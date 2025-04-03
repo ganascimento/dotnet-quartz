@@ -26,7 +26,7 @@ public sealed class CreateEmailTokenValidationJob : IJob
 
         _logger.LogInformation($"{DateTime.UtcNow} | Creating token to user {userId}");
 
-        var user = await _context.User.FirstOrDefaultAsync(x => x.Id == userId);
+        var user = await _context.User!.FirstOrDefaultAsync(x => x.Id == userId);
         if (user == null)
             throw new InvalidDataException("User not found!");
 
